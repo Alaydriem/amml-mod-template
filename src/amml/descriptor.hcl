@@ -1,0 +1,6 @@
+namespace    = "__NAMESPACE__"
+name         = "__MOD__"
+display_name = "__TITLE__"
+version      = "26.63.0"
+author       = "Alaydriem"
+config_path  = "config.hcl"

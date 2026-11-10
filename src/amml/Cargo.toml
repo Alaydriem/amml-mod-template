@@ -1,0 +1,26 @@
+[package]
+name = "__MOD__-amml"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "__NAMESPACE_____MOD_SNAKE__"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+__MOD__-core.workspace = true
+amml-sdk.workspace = true
+amm-client.workspace = true
+amm-core.workspace = true
+curia.workspace = true
+
+[dev-dependencies]
+amm-client = { workspace = true, features = ["test-support"] }
+hcl-rs.workspace = true
+
+[lints]
+workspace = true

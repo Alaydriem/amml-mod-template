@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+#MISE description="Turns this template into a named mod: fills in every placeholder, then deletes this task"
+#USAGE flag "--name <name>" required=#true help="Mod name in kebab-case, for example headless-input"
+#USAGE flag "--title <title>" required=#true help="Display title, for example \"Headless Input\""
+#USAGE flag "--namespace <ns>" required=#true help="Mod namespace: amml (core mods) or alaydriem (every other mod)"
+#USAGE flag "--mc-version <version>" default="1.26.63" help="Minecraft Bedrock version for the README badge"
+set -euo pipefail
+
+name="${usage_name:-}"
+title="${usage_title:-}"
+mc_version="${usage_mc_version:-1.26.63}"
+namespace="${usage_namespace:-}"
+
+cd "${MISE_PROJECT_ROOT:-$(dirname "$0")/../..}"
+
+# 1. Check every input before any file changes.
+if ! [[ "$name" =~ ^[a-z][a-z0-9]*(-[a-z0-9]+)*$ ]]; then
+  echo "init: --name must be kebab-case (lowercase letters, digits, single hyphens), for example headless-input. Got: '$name'" >&2
+  exit 1
+fi
+if [ -z "${title// /}" ]; then
+  echo "init: --title must not be empty" >&2
+  exit 1
+fi
+if [[ "$title" == *'"'* || "$title" == *'\'* || "$title" == *'${'* || "$title" == *'%{'* ]]; then
+  echo "init: --title must not contain \", \\, \${ or %{ (it goes into HCL strings)" >&2
+  exit 1
+fi
+if [ "$namespace" != "amml" ] && [ "$namespace" != "alaydriem" ]; then
+  echo "init: --namespace must be amml (core mods) or alaydriem (every other mod). Got: '$namespace'" >&2
+  exit 1
+fi
+if ! [[ "$mc_version" =~ ^[0-9]+(\.[0-9]+)+$ ]]; then
+  echo "init: --mc-version must look like 1.26.63. Got: '$mc_version'" >&2
+  exit 1
+fi
+
+# 2. Work out the snake-case name, and escape the title for the sed replacement.
+snake="${name//-/_}"
+sed_escape() { printf '%s' "$1" | sed -e 's/[\\&|]/\\&/g'; }
+title_sed="$(sed_escape "$title")"
+
+# 3. Replace the tokens in every text file. __NAMESPACE__ goes first, because __NAMESPACE_____MOD_SNAKE__ (the DLL name)
+#    starts with it. Then __MOD_SNAKE__, because __MOD__ is a prefix of it.
+self=".mise/tasks/init"
+find . -type f ! -path './.git/*' ! -path './target/*' ! -path "./$self" -print0 \
+  | while IFS= read -r -d '' file; do
+      grep -Iq . "$file" || continue # skip binary and empty files
+      grep -qE '__(MOD|MOD_SNAKE|TITLE|MC_VERSION|NAMESPACE)__' "$file" || continue
+      sed -i \
+        -e "s|__NAMESPACE__|$namespace|g" \
+        -e "s|__MOD_SNAKE__|$snake|g" \
+        -e "s|__MOD__|$name|g" \
+        -e "s|__TITLE__|$title_sed|g" \
+        -e "s|__MC_VERSION__|$mc_version|g" \
+        "$file"
+    done
+
+# The README's "how to use this template" block is only for the template itself.
+sed -i '/<!-- init:begin -->/,/<!-- init:end -->/d' README.md
+
+# 4. Stop if any token is left.
+left="$(grep -rIlE '__(MOD|MOD_SNAKE|TITLE|MC_VERSION|NAMESPACE)__' --exclude-dir=.git --exclude-dir=target . | grep -v "^\./$self$" || true)"
+if [ -n "$left" ]; then
+  echo "init: placeholders are still in these files:" >&2
+  echo "$left" >&2
+  exit 1
+fi
+
+# 5. Delete this task.
+rm -f "$self"
+rmdir .mise/tasks 2>/dev/null || true
+rmdir .mise 2>/dev/null || true
+
+# 6. Next steps.
+echo "init: this repo is now the '$name' mod (${namespace}_$snake.dll)."
+echo "Next:"
+echo "  mise trust"
+echo "  mise run preflight"
+echo "  mise run check"
+echo "Commit Cargo.lock (made by the first build) with your first commit. The release workflow needs it."
