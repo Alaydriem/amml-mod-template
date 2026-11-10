@@ -11,13 +11,17 @@ license = "BSD-3-Clause"
 publish = false
 
 [workspace.dependencies]
-amm-client = { git = "https://github.com/Alaydriem/amml-modmanager.git", tag = "26.63.0", default-features = false }
-amm-core = { git = "https://github.com/Alaydriem/amml-modmanager.git", tag = "26.63.0" }
-amml-sdk = { git = "https://github.com/Alaydriem/amml.git", tag = "26.63.0" }
+amm-client = { git = "https://github.com/Alaydriem/amml-modmanager.git", tag = "26.63.2", default-features = false }
+amm-core = { git = "https://github.com/Alaydriem/amml-modmanager.git", tag = "26.63.2" }
+amml-sdk = { git = "https://github.com/Alaydriem/amml.git", tag = "26.63.2" }
 curia = "=0.2.2"
 hcl-rs = "=0.19.8"
 serde = { version = "1.0.229", features = ["derive"] }
 __MOD__-core = { path = "src/core" }
+
+[workspace.lints.rust]
+# The placeholder crate names are not snake case. `mise run init` deletes this section.
+non_snake_case = "allow"
 
 [workspace.lints.clippy]
 unwrap_used = "deny"

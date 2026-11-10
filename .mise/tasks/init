@@ -59,6 +59,9 @@ find . -type f ! -path './.git/*' ! -path './target/*' ! -path "./$self" -print0
 # The README's "how to use this template" block is only for the template itself.
 sed -i '/<!-- init:begin -->/,/<!-- init:end -->/d' README.md
 
+# The lint exception is only for the placeholder crate names.
+sed -i '/^\[workspace.lints.rust\]$/,/^$/d' Cargo.toml
+
 # 4. Stop if any token is left.
 left="$(grep -rIlE '__(MOD|MOD_SNAKE|TITLE|MC_VERSION|NAMESPACE)__' --exclude-dir=.git --exclude-dir=target . | grep -v "^\./$self$" || true)"
 if [ -n "$left" ]; then
